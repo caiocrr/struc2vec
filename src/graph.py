@@ -35,10 +35,10 @@ class Graph(defaultdict):
     super(Graph, self).__init__(list)
 
   def nodes(self):
-    return self.keys()
+    return list(self.keys())
 
   def adjacency_iter(self):
-    return self.iteritems()
+    return iter(self.items())
 
   def subgraph(self, nodes={}):
     subgraph = Graph()
@@ -53,7 +53,7 @@ class Graph(defaultdict):
   
     t0 = time()
 
-    for v in self.keys():
+    for v in list(self.keys()):
       for other in self[v]:
         if v != other:
           self[other].append(v)
@@ -116,7 +116,7 @@ class Graph(defaultdict):
 
   def number_of_edges(self):
     "Returns the number of nodes in the graph"
-    return sum([self.degree(x) for x in self.keys()])/2
+    return sum([self.degree(x) for x in list(self.keys())])/2
 
   def number_of_nodes(self):
     "Returns the number of nodes in the graph"
@@ -124,18 +124,18 @@ class Graph(defaultdict):
 
   def gToDict(self):
     d = {}
-    for k,v in self.iteritems():
+    for k,v in self.items():
       d[k] = v
     return d
 
   def printAdjList(self):
-    for key,value in self.iteritems():
-      print (key,":",value)
+    for key,value in self.items():
+      print((key,":",value))
 
 
 
 def clique(size):
-    return from_adjlist(permutations(range(1,size+1)))
+    return from_adjlist(permutations(list(range(1,size+1))))
 
 # http://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks-in-python
 def grouper(n, iterable, padvalue=None):
@@ -280,7 +280,7 @@ def from_adjlist_unchecked(adjlist):
 
 def from_dict(d):
     G = Graph()
-    for k,v in d.iteritems():
+    for k,v in d.items():
       G[k] = v
 
     return G
