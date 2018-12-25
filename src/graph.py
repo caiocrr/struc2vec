@@ -19,7 +19,7 @@ from random import shuffle
 from itertools import product,permutations
 import collections
 
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 
 from multiprocessing import Pool
 from multiprocessing import cpu_count
@@ -174,7 +174,7 @@ def load_adjacencylist(file_, undirected=False, chunksize=10000, unchecked=True)
   t0 = time()
 
   with open(file_) as f:
-    with ProcessPoolExecutor(max_workers=cpu_count()) as executor:
+    with ThreadPoolExecutor(max_workers=cpu_count()) as executor:
       total = 0 
       for idx, adj_chunk in enumerate(executor.map(parse_func, grouper(int(chunksize), f))):
           adjlist.extend(adj_chunk)

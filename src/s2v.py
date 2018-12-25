@@ -7,6 +7,7 @@ import struc2vec
 from gensim.models import Word2Vec
 from gensim.models.word2vec import LineSentence
 from time import time
+import sys
 
 import graph
 
@@ -120,8 +121,8 @@ def execs2v(args):
 	try:			
 		G = exec_struc2vec(args)
 		learn_embeddings(args)
-	except e:
-		logging.info(e)
+	except RuntimeError as e:
+		logging.info(e.message)
 
 
 

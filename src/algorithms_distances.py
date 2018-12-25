@@ -4,7 +4,7 @@ from collections import deque
 import numpy as np
 import math,logging
 from fastdtw import fastdtw
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import defaultdict
 from utils import *
 import os
@@ -410,7 +410,7 @@ def exec_bfs_compact(G,workers,calcUntilLayer):
             maxDegree = len(G[v])
     logging.info('Larger degree captured')
 
-    with ProcessPoolExecutor(max_workers=workers) as executor:
+    with ThreadPoolExecutor(max_workers=workers) as executor:
 
         part = 1
         for c in chunks:
@@ -441,7 +441,7 @@ def exec_bfs(G,workers,calcUntilLayer):
     parts = workers
     chunks = partition(vertices,parts)
 
-    with ProcessPoolExecutor(max_workers=workers) as executor:
+    with ThreadPoolExecutor(max_workers=workers) as executor:
 
         part = 1
         for c in chunks:
@@ -607,7 +607,7 @@ def generate_distances_network(workers):
     logging.info('Creating distance network...')
 
     os.system("rm "+returnPathStruc2vec()+"/../pickles/weights_distances-layer-*.pickle")
-    with ProcessPoolExecutor(max_workers=1) as executor:
+    with ThreadPoolExecutor(max_workers=1) as executor:
         job = executor.submit(generate_distances_network_part1,workers)
         job.result()
     t1 = time()
@@ -616,7 +616,7 @@ def generate_distances_network(workers):
 
     t0 = time()
     os.system("rm "+returnPathStruc2vec()+"/../pickles/graphs-layer-*.pickle")
-    with ProcessPoolExecutor(max_workers=1) as executor:
+    with ThreadPoolExecutor(max_workers=1) as executor:
         job = executor.submit(generate_distances_network_part2,workers)
         job.result()
     t1 = time()
@@ -630,7 +630,7 @@ def generate_distances_network(workers):
     os.system("rm "+returnPathStruc2vec()+"/../pickles/distances_nets_weights-layer-*.pickle")
     os.system("rm "+returnPathStruc2vec()+"/../pickles/alias_method_j-layer-*.pickle")
     os.system("rm "+returnPathStruc2vec()+"/../pickles/alias_method_q-layer-*.pickle")
-    with ProcessPoolExecutor(max_workers=1) as executor:
+    with ThreadPoolExecutor(max_workers=1) as executor:
         job = executor.submit(generate_distances_network_part3)
         job.result()
     t1 = time()
@@ -638,7 +638,7 @@ def generate_distances_network(workers):
     logging.info('- Time - part 3: {}s'.format(t))
 
     t0 = time()
-    with ProcessPoolExecutor(max_workers=1) as executor:
+    with ThreadPoolExecutor(max_workers=1) as executor:
         job = executor.submit(generate_distances_network_part4)
         job.result()
     t1 = time()
@@ -646,7 +646,7 @@ def generate_distances_network(workers):
     logging.info('- Time - part 4: {}s'.format(t))
 
     t0 = time()
-    with ProcessPoolExecutor(max_workers=1) as executor:
+    with ThreadPoolExecutor(max_workers=1) as executor:
         job = executor.submit(generate_distances_network_part5)
         job.result()
     t1 = time()
@@ -654,7 +654,7 @@ def generate_distances_network(workers):
     logging.info('- Time - part 5: {}s'.format(t))
 
     t0 = time()
-    with ProcessPoolExecutor(max_workers=1) as executor:
+    with ThreadPoolExecutor(max_workers=1) as executor:
         job = executor.submit(generate_distances_network_part6)
         job.result()
     t1 = time()
