@@ -3,7 +3,7 @@ from time import time
 from collections import deque
 import numpy as np
 import math,random,logging
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed
 import multiprocessing as mp
 from collections import defaultdict
 
@@ -129,7 +129,7 @@ def generate_random_walks_large_graphs(num_walks,walk_length,workers,vertices):
 
     parts = workers
 
-    with ThreadPoolExecutor(max_workers=workers) as executor:
+    with ProcessPoolExecutor(max_workers=workers) as executor:
 
         for walk_iter in range(num_walks):
             random.shuffle(vertices)
@@ -163,7 +163,7 @@ def generate_random_walks(num_walks,walk_length,workers,vertices):
     if(workers > num_walks):
         workers = num_walks
 
-    with ThreadPoolExecutor(max_workers=workers) as executor:
+    with ProcessPoolExecutor(max_workers=workers) as executor:
         futures = {}
         for walk_iter in range(num_walks):
             random.shuffle(vertices)

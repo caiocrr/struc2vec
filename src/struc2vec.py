@@ -2,7 +2,7 @@
 
 import numpy as np
 import random,sys,logging
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from multiprocessing import Manager
 from time import time
 from collections import deque
@@ -31,7 +31,7 @@ class Graph():
 
 	def preprocess_neighbors_with_bfs(self):
 
-		with ThreadPoolExecutor(max_workers=self.workers) as executor:
+		with ProcessPoolExecutor(max_workers=self.workers) as executor:
 			job = executor.submit(exec_bfs,self.G,self.workers,self.calcUntilLayer)
 			
 			job.result()
@@ -40,7 +40,7 @@ class Graph():
 
 	def preprocess_neighbors_with_bfs_compact(self):
 
-		with ThreadPoolExecutor(max_workers=self.workers) as executor:
+		with ProcessPoolExecutor(max_workers=self.workers) as executor:
 			job = executor.submit(exec_bfs_compact,self.G,self.workers,self.calcUntilLayer)
 			
 			job.result()
@@ -49,7 +49,7 @@ class Graph():
 
 	def preprocess_degree_lists(self):
 
-		with ThreadPoolExecutor(max_workers=self.workers) as executor:
+		with ProcessPoolExecutor(max_workers=self.workers) as executor:
 			job = executor.submit(preprocess_degreeLists)
 			
 			job.result()
@@ -107,7 +107,7 @@ class Graph():
 
 		t0 = time()
 
-		with ThreadPoolExecutor(max_workers = self.workers) as executor:
+		with ProcessPoolExecutor(max_workers = self.workers) as executor:
 
 			part = 1
 			for c in chunks:
@@ -151,7 +151,7 @@ class Graph():
 		parts = self.workers
 		chunks = partition(vertices,parts)
 
-		with ThreadPoolExecutor(max_workers = 1) as executor:
+		with ProcessPoolExecutor(max_workers = 1) as executor:
 
 			logging.info("Split degree List...")
 			part = 1
@@ -162,7 +162,7 @@ class Graph():
 				part += 1
 
 		
-		with ThreadPoolExecutor(max_workers = self.workers) as executor:
+		with ProcessPoolExecutor(max_workers = self.workers) as executor:
 
 			part = 1
 			for c in chunks:
@@ -197,7 +197,7 @@ class Graph():
 
 	def create_distances_network(self):
 
-		with ThreadPoolExecutor(max_workers=1) as executor:
+		with ProcessPoolExecutor(max_workers=1) as executor:
 			job = executor.submit(generate_distances_network,self.workers)
 
 			job.result()
@@ -206,7 +206,7 @@ class Graph():
 
 	def preprocess_parameters_random_walk(self):
 
-		with ThreadPoolExecutor(max_workers=1) as executor:
+		with ProcessPoolExecutor(max_workers=1) as executor:
 			job = executor.submit(generate_parameters_random_walk,self.workers)
 
 			job.result()
@@ -219,14 +219,14 @@ class Graph():
 		# for large graphs, it is serially executed, because of memory use.
 		if(len(self.G) > 500000):
 
-			with ThreadPoolExecutor(max_workers=1) as executor:
+			with ProcessPoolExecutor(max_workers=1) as executor:
 				job = executor.submit(generate_random_walks_large_graphs,num_walks,walk_length,self.workers,self.G.keys())
 
 				job.result()
 
 		else:
 
-			with ThreadPoolExecutor(max_workers=1) as executor:
+			with ProcessPoolExecutor(max_workers=1) as executor:
 				job = executor.submit(generate_random_walks,num_walks,walk_length,self.workers,self.G.keys())
 
 				job.result()
