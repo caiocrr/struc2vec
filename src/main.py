@@ -63,7 +63,7 @@ def parse_args():
                       help='optimization 3')	
 	return parser.parse_args()
 
-def read_graph(args):
+def read_graph():
 	'''
 	Reads the input network.
 	'''
@@ -72,7 +72,7 @@ def read_graph(args):
 	logging.info(" - Graph loaded.")
 	return G
 
-def learn_embeddings(args):
+def learn_embeddings():
 	'''
 	Learn embeddings by optimizing the Skipgram objective using SGD.
 	'''
@@ -93,7 +93,7 @@ def exec_struc2vec(args):
 	else:
 		until_layer = None
 
-	G = read_graph(args)
+	G = read_graph()
 	G = struc2vec.Graph(G, args.directed, args.workers, untilLayer = until_layer)
 
 	if(args.OPT1):
@@ -120,7 +120,7 @@ def main(args):
 
 	G = exec_struc2vec(args)
 
-	learn_embeddings(args)
+	learn_embeddings()
 
 
 if __name__ == "__main__":
