@@ -21,17 +21,37 @@ def getDegreeListsVertices(g,vertices,calcUntilLayer):
 
 def getCompactDegreeListsVertices(g,vertices,maxDegree,calcUntilLayer):
     degreeList = {}
+    commonFriendsList = {}
 
     for v in vertices:
-        degreeList[v] = getCompactDegreeLists(g,v,maxDegree,calcUntilLayer)
+        degreeList[v], commonFriendsList[v] = getCompactDegreeLists(g,v,maxDegree,calcUntilLayer)
 
-    return degreeList
+    return degreeList, commonFriendsList
 
+def getCommonFriendsMed(g,v):
+    #t0 = time()
+    med = 0
+    neighs = g[v]
+    neighs.sort()
+
+    vdegree = float(len(neighs))
+    totalcf = 0
+    for u in g[v]:
+        cf = 0
+        neighs_u = g[u]
+        neighs_u.sort()
+        cf = searchCommonFriends(neighs, neighs_u)
+        totalcf += cf
+    med = totalcf / vdegree
+    #t1 = time()
+    #logging.info('Common friends vertex {}. Med: {}. Time: {}s'.format(v,med,(t1-t0)))
+    return med
 
 def getCompactDegreeLists(g, root, maxDegree,calcUntilLayer):
     t0 = time()
 
     listas = {}
+    commons = {}
     vetor_marcacao = [0] * (max(g) + 1)
 
     # Marcar s e inserir s na fila Q
@@ -39,6 +59,8 @@ def getCompactDegreeLists(g, root, maxDegree,calcUntilLayer):
     queue.append(root)
     vetor_marcacao[root] = 1
     l = {}
+    q = deque()
+    
     
     ## Variáveis de controle de distância
     depth = 0
@@ -54,11 +76,14 @@ def getCompactDegreeLists(g, root, maxDegree,calcUntilLayer):
             l[d] = 0
         l[d] += 1
 
+        q.append(getCommonFriendsMed(g,vertex))
+
         for v in g[vertex]:
             if(vetor_marcacao[v] == 0):
                 vetor_marcacao[v] = 1
                 queue.append(v)
-                pendingDepthIncrease += 1    
+                pendingDepthIncrease += 1
+
 
         if(timeToDepthIncrease == 0):
 
@@ -68,6 +93,12 @@ def getCompactDegreeLists(g, root, maxDegree,calcUntilLayer):
             list_d.sort(key=lambda x: x[0])
             listas[depth] = np.array(list_d,dtype=np.int32)
 
+            qp = np.array(q,dtype='float')
+            qp = np.sort(qp)
+            commons[depth] = qp
+
+
+            q = deque()
             l = {}
 
             if(calcUntilLayer == depth):
@@ -81,7 +112,25 @@ def getCompactDegreeLists(g, root, maxDegree,calcUntilLayer):
     t1 = time()
     logging.info('BFS vertex {}. Time: {}s'.format(root,(t1-t0)))
 
-    return listas
+    return listas, commons
+
+def searchCommonFriends(sorted_full,sorted_sub):
+    full_ix = 0
+    sub_ix = 0
+    count = 0
+    while full_ix < len(sorted_full) and sub_ix < len(sorted_sub):
+        curr_full = sorted_full[full_ix]
+        curr_sub = sorted_sub[sub_ix]
+        if curr_full == curr_sub:
+            count += 1
+            full_ix +=1
+            sub_ix +=1
+            continue
+        if curr_full < curr_sub:
+            full_ix +=1
+        else:
+            sub_ix+=1
+    return count
 
 
 def getDegreeLists(g, root, calcUntilLayer):
@@ -282,6 +331,15 @@ def splitDegreeList(part,c,G,compactDegree):
     saveVariableOnDisk(degreeListsSelected,'split-degreeList-'+str(part))
 
 
+   
+    logging.info("Recovering commonFriends from disk...")
+    commonFriends = restoreVariableFromDisk('commonFriends')
+
+
+
+    
+
+
 def calc_distances(part, compactDegree = False):
 
     vertices = restoreVariableFromDisk('split-vertices-'+str(part))
@@ -317,9 +375,10 @@ def calc_distances(part, compactDegree = False):
     saveVariableOnDisk(distances,'distances-'+str(part))
     return
 
-def calc_distances_all(vertices,list_vertices,degreeList,part, compactDegree = False):
+def calc_distances_all(vertices,list_vertices,degreeList, commonList, part, compactDegree = False):
 
-    distances = {}
+    distances_r = {}
+    distances_q = {}
     cont = 0
 
     if compactDegree:
@@ -329,25 +388,32 @@ def calc_distances_all(vertices,list_vertices,degreeList,part, compactDegree = F
 
     for v1 in vertices:
         lists_v1 = degreeList[v1]
+        common_v1 = commonList[v1]
 
         for v2 in list_vertices[cont]:
             lists_v2 = degreeList[v2]
+            common_v2 = commonList[v2]
             
             max_layer = min(len(lists_v1),len(lists_v2))
-            distances[v1,v2] = {}
+            distances_r[v1,v2] = {}
+            distances_q[v1,v2] = {}
 
             for layer in range(0,max_layer):
                 #t0 = time()
-                dist, path = fastdtw(lists_v1[layer],lists_v2[layer],radius=1,dist=dist_func)
+                dist_r, path = fastdtw(lists_v1[layer],lists_v2[layer],radius=1,dist=dist_func)
+                dist_q, path = fastdtw(common_v1[layer],common_v2[layer],radius=1,dist=dist_func)
                 #t1 = time()
                 #logging.info('D ({} , {}), Tempo fastDTW da camada {} : {}s . Distância: {}'.format(v1,v2,layer,(t1-t0),dist))    
-                distances[v1,v2][layer] = dist
+                distances_r[v1,v2][layer] = dist_r
+                distances_q[v1,v2][layer] = dist_q
                 
 
         cont += 1
 
-    preprocess_consolides_distances(distances)
-    saveVariableOnDisk(distances,'distances-'+str(part))
+    preprocess_consolides_distances(distances_r)
+    preprocess_consolides_distances(distances_q)
+    saveVariableOnDisk(distances_r,'distances-r-'+str(part))
+    saveVariableOnDisk(distances_q,'distances-q-'+str(part))
     return
 
 
@@ -397,6 +463,7 @@ def exec_bfs_compact(G,workers,calcUntilLayer):
 
     futures = {}
     degreeList = {}
+    commonList = {}
 
     t0 = time()
     vertices = G.keys()
@@ -419,17 +486,22 @@ def exec_bfs_compact(G,workers,calcUntilLayer):
             part += 1
 
         for job in as_completed(futures):
-            dl = job.result()
+            dl, ql = job.result()
             v = futures[job]
             degreeList.update(dl)
+            commonList.update(ql)
 
     logging.info("Saving degreeList on disk...")
     saveVariableOnDisk(degreeList,'compactDegreeList')
+
+    logging.info("Saving commonList on disk...")
+    saveVariableOnDisk(commonList,'commonList')
     t1 = time()
     logging.info('Execution time - BFS: {}m'.format((t1-t0)/60))
 
 
     return
+
 
 def exec_bfs(G,workers,calcUntilLayer):
 
@@ -465,82 +537,107 @@ def exec_bfs(G,workers,calcUntilLayer):
 
 def generate_distances_network_part1(workers):
     parts = workers
-    weights_distances = {}
+    weights_distances_r = {}
+    weights_distances_q = {}
     for part in range(1,parts + 1):    
         
         logging.info('Executing part {}...'.format(part))
-        distances = restoreVariableFromDisk('distances-'+str(part))
+        distances_r = restoreVariableFromDisk('distances-r-'+str(part))
+        distances_q = restoreVariableFromDisk('distances-q-'+str(part))
         
-        for vertices,layers in distances.iteritems():
+        for vertices,layers in distances_r.iteritems():
             for layer,distance in layers.iteritems():
                 vx = vertices[0]
                 vy = vertices[1]
-                if(layer not in weights_distances):
-                    weights_distances[layer] = {}
-                weights_distances[layer][vx,vy] = distance
+                if(layer not in weights_distances_r):
+                    weights_distances_r[layer] = {}
+                weights_distances_r[layer][vx,vy] = distance
+
+        for vertices,layers in distances_q.iteritems():
+            for layer,distance in layers.iteritems():
+                vx = vertices[0]
+                vy = vertices[1]
+                if(layer not in weights_distances_q):
+                    weights_distances_q[layer] = {}
+                weights_distances_q[layer][vx,vy] = distance
+
 
         logging.info('Part {} executed.'.format(part))
 
-    for layer,values in weights_distances.iteritems():
-        saveVariableOnDisk(values,'weights_distances-layer-'+str(layer))
+    for layer,values in weights_distances_r.iteritems():
+        saveVariableOnDisk(values,'weights_distances-r-layer-'+str(layer))
+    for layer,values in weights_distances_q.iteritems():
+        saveVariableOnDisk(values,'weights_distances--q-layer-'+str(layer))
     return
 
 def generate_distances_network_part2(workers):
     parts = workers
-    graphs = {}
+    graphs_r = {}
     for part in range(1,parts + 1):
 
         logging.info('Executing part {}...'.format(part))
-        distances = restoreVariableFromDisk('distances-'+str(part))
+        distances_r = restoreVariableFromDisk('distances-r-'+str(part))
 
-        for vertices,layers in distances.iteritems():
+        for vertices,layers in distances_r.iteritems():
             for layer,distance in layers.iteritems():
                 vx = vertices[0]
                 vy = vertices[1]
-                if(layer not in graphs):
-                    graphs[layer] = {}
-                if(vx not in graphs[layer]):
-                   graphs[layer][vx] = [] 
-                if(vy not in graphs[layer]):
-                   graphs[layer][vy] = [] 
-                graphs[layer][vx].append(vy)
-                graphs[layer][vy].append(vx)
+                if(layer not in graphs_r):
+                    graphs_r[layer] = {}
+                if(vx not in graphs_r[layer]):
+                   graphs_r[layer][vx] = [] 
+                if(vy not in graphs_r[layer]):
+                   graphs_r[layer][vy] = [] 
+                graphs_r[layer][vx].append(vy)
+                graphs_r[layer][vy].append(vx)
         logging.info('Part {} executed.'.format(part))
 
-    for layer,values in graphs.iteritems():
-        saveVariableOnDisk(values,'graphs-layer-'+str(layer))
+    for layer,values in graphs_r.iteritems():
+        saveVariableOnDisk(values,'graphs-r-layer-'+str(layer))
 
     return
 
-def generate_distances_network_part3():
+def generate_distances_network_part3(pcommonf):
 
     layer = 0
-    while(isPickle('graphs-layer-'+str(layer))):
-        graphs = restoreVariableFromDisk('graphs-layer-'+str(layer))
-        weights_distances = restoreVariableFromDisk('weights_distances-layer-'+str(layer))
+    while(isPickle('graphs-r-layer-'+str(layer))):
+        graphs_r = restoreVariableFromDisk('graphs-r-layer-'+str(layer))
+        weights_distances_r = restoreVariableFromDisk('weights_distances-r-layer-'+str(layer))
+        weights_distances_q = restoreVariableFromDisk('weights_distances-q-layer-'+str(layer))
 
         logging.info('Executing layer {}...'.format(layer))
         alias_method_j = {}
         alias_method_q = {}
         weights = {}
     
-        for v,neighbors in graphs.iteritems():
-            e_list = deque()
-            sum_w = 0.0
+        for v,neighbors in graphs_r.iteritems():
+            er_list = deque()
+            eq_list = deque()
+            sum_wr = 0.0
+            sum_wq = 0.0
 
 
             for n in neighbors:
-                if (v,n) in weights_distances:
-                    wd = weights_distances[v,n]
+                if (v,n) in weights_distances_r:
+                    wd = weights_distances_r[v,n]
                 else:
-                    wd = weights_distances[n,v]
-                w = np.exp(-float(wd))
-                e_list.append(w)
-                sum_w += w
+                    wd = weights_distances_r[n,v]
+                if (v,n) in weights_distances_q:
+                    wq = weights_distances_q[v,n]
+                else:
+                    wq = weights_distances_q[n,v]
+                wr = np.exp(-float(wd))
+                wrq = np.exp(-float(wq))
+                er_list.append(wr)
+                eq_list.append(wrq)
+                sum_wr += wr
+                sum_wq += wrq
 
-            e_list = [x / sum_w for x in e_list]
-            weights[v] = e_list
-            J, q = alias_setup(e_list)
+            er_list = [x / sum_wr for x in er_list]
+            eq_list = [x / sum_wq for x in eq_list]
+            vec_res = (1 - pcommonf) * er_list + pcommonf * eq_list
+            weights[v] = vec_res
+            J, q = alias_setup(vec_res)
             alias_method_j[v] = J
             alias_method_q[v] = q
 
@@ -559,9 +656,9 @@ def generate_distances_network_part4():
     logging.info('Consolidating graphs...')
     graphs_c = {}
     layer = 0
-    while(isPickle('graphs-layer-'+str(layer))):
+    while(isPickle('graphs-r-layer-'+str(layer))):
         logging.info('Executing layer {}...'.format(layer))
-        graphs = restoreVariableFromDisk('graphs-layer-'+str(layer))
+        graphs = restoreVariableFromDisk('graphs-r-layer-'+str(layer))
         graphs_c[layer] = graphs
         logging.info('Layer {} executed.'.format(layer))
         layer += 1
@@ -602,11 +699,12 @@ def generate_distances_network_part6():
 
     return
 
-def generate_distances_network(workers):
+def generate_distances_network(workers, pcommonf):
     t0 = time()
     logging.info('Creating distance network...')
 
-    os.system("rm "+returnPathStruc2vec()+"/../pickles/weights_distances-layer-*.pickle")
+    os.system("rm "+returnPathStruc2vec()+"/../pickles/weights_distances-r-layer-*.pickle")
+    os.system("rm "+returnPathStruc2vec()+"/../pickles/weights_distances-q-layer-*.pickle")
     with ProcessPoolExecutor(max_workers=1) as executor:
         job = executor.submit(generate_distances_network_part1,workers)
         job.result()
@@ -615,7 +713,7 @@ def generate_distances_network(workers):
     logging.info('- Time - part 1: {}s'.format(t))
 
     t0 = time()
-    os.system("rm "+returnPathStruc2vec()+"/../pickles/graphs-layer-*.pickle")
+    os.system("rm "+returnPathStruc2vec()+"/../pickles/graphs-r-layer-*.pickle")
     with ProcessPoolExecutor(max_workers=1) as executor:
         job = executor.submit(generate_distances_network_part2,workers)
         job.result()
@@ -631,7 +729,7 @@ def generate_distances_network(workers):
     os.system("rm "+returnPathStruc2vec()+"/../pickles/alias_method_j-layer-*.pickle")
     os.system("rm "+returnPathStruc2vec()+"/../pickles/alias_method_q-layer-*.pickle")
     with ProcessPoolExecutor(max_workers=1) as executor:
-        job = executor.submit(generate_distances_network_part3)
+        job = executor.submit(generate_distances_network_part3, pcommonf)
         job.result()
     t1 = time()
     t = t1-t0

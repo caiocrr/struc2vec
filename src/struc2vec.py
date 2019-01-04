@@ -14,7 +14,7 @@ import graph
 
 
 class Graph():
-	def __init__(self, g, is_directed, workers, untilLayer = None):
+	def __init__(self, g, is_directed, workers, untilLayer = None, pcommonf = 0.5):
 
 		logging.info(" - Converting graph to dict...")
 		self.G = g.gToDict()
@@ -24,6 +24,7 @@ class Graph():
 		self.num_edges = g.number_of_edges()
 		self.is_directed = is_directed
 		self.workers = workers
+		self.pcommonf = pcommonf
 		self.calcUntilLayer = untilLayer
 		logging.info('Graph - Number of vertices: {}'.format(self.num_vertices))
 		logging.info('Graph - Number of edges: {}'.format(self.num_edges))
@@ -102,6 +103,9 @@ class Graph():
 		    logging.info("Recovering compactDegreeList from disk...")
 		    degreeList = restoreVariableFromDisk('degreeList')
 
+		logging.info("Recovering commonList from disk...")
+		commonList = restoreVariableFromDisk('commonList')	
+
 		parts = self.workers
 		chunks = partition(vertices,parts)
 
@@ -115,7 +119,7 @@ class Graph():
 				list_v = []
 				for v in c:
 					list_v.append([vd for vd in degreeList.keys() if vd > v])
-				job = executor.submit(calc_distances_all, c, list_v, degreeList,part, compactDegree = compactDegree)
+				job = executor.submit(calc_distances_all, c, list_v, degreeList, commonList,part, compactDegree = compactDegree)
 				futures[job] = part
 				part += 1
 
@@ -179,7 +183,6 @@ class Graph():
 
 
 		return
-
 	def consolide_distances(self):
 
 		distances = {}
@@ -198,7 +201,7 @@ class Graph():
 	def create_distances_network(self):
 
 		with ProcessPoolExecutor(max_workers=1) as executor:
-			job = executor.submit(generate_distances_network,self.workers)
+			job = executor.submit(generate_distances_network,self.workers, self.pcommonf)
 
 			job.result()
 
