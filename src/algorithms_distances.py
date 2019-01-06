@@ -340,12 +340,13 @@ def splitDegreeList(part,c,G,compactDegree):
     
 
 
-def calc_distances(part, compactDegree = False):
+def calc_distances(part, commonList, compactDegree = False):
 
     vertices = restoreVariableFromDisk('split-vertices-'+str(part))
     degreeList = restoreVariableFromDisk('split-degreeList-'+str(part))
 
-    distances = {}
+    distances_r = {}
+    distances_q = {}
 
     if compactDegree:
         dist_func = cost_max
@@ -354,25 +355,31 @@ def calc_distances(part, compactDegree = False):
 
     for v1,nbs in vertices.iteritems():
         lists_v1 = degreeList[v1]
+        common_v1 = commonList[v1]
 
         for v2 in nbs:
             t00 = time()
             lists_v2 = degreeList[v2]
+            common_v2 = commonList[v2]
 
             max_layer = min(len(lists_v1),len(lists_v2))
-            distances[v1,v2] = {}
+            distances_r[v1,v2] = {}
+            distances_q[v1,v2] = {}
 
             for layer in range(0,max_layer):
-                dist, path = fastdtw(lists_v1[layer],lists_v2[layer],radius=1,dist=dist_func)
-
-                distances[v1,v2][layer] = dist
+                dist_r, path = fastdtw(lists_v1[layer],lists_v2[layer],radius=1,dist=dist_func)
+                dist_q, path = fastdtw(common_v1[layer],common_v2[layer],radius=1,dist=dist_func)
+                distances_r[v1,v2][layer] = dist_r
+                distances_q[v1,v2][layer] = dist_q
 
             t11 = time()
             logging.info('fastDTW between vertices ({}, {}). Time: {}s'.format(v1,v2,(t11-t00)))
 
 
-    preprocess_consolides_distances(distances)
-    saveVariableOnDisk(distances,'distances-'+str(part))
+    preprocess_consolides_distances(distances_r)
+    preprocess_consolides_distances(distances_q)
+    saveVariableOnDisk(distances_r,'distances-r-'+str(part))
+    saveVariableOnDisk(distances_q,'distances-q-'+str(part))
     return
 
 def calc_distances_all(vertices,list_vertices,degreeList, commonList, part, compactDegree = False):

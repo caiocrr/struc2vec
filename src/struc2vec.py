@@ -166,12 +166,15 @@ class Graph():
 				part += 1
 
 		
+		logging.info("Recovering commonList from disk...")
+		commonList = restoreVariableFromDisk('commonList')	
+
 		with ProcessPoolExecutor(max_workers = self.workers) as executor:
 
 			part = 1
 			for c in chunks:
 				logging.info("Executing part {}...".format(part))
-				job = executor.submit(calc_distances, part, compactDegree = compactDegree)
+				job = executor.submit(calc_distances, part, commonList, compactDegree = compactDegree)
 				futures[job] = part
 				part += 1
 
