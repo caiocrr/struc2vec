@@ -9,6 +9,7 @@ from gensim.models.word2vec import LineSentence
 from time import time
 import sys
 
+import gc
 import graph
 
 logging.basicConfig(filename='struc2vec.log',filemode='w',level=logging.DEBUG,format='%(asctime)s %(message)s')

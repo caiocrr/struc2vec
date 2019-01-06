@@ -28,7 +28,15 @@ class Graph():
 		self.calcUntilLayer = untilLayer
 		logging.info('Graph - Number of vertices: {}'.format(self.num_vertices))
 		logging.info('Graph - Number of edges: {}'.format(self.num_edges))
+		self.common = {}
 
+	def prepareCommonFriends(self):
+    #t0 = time()
+		with ProcessPoolExecutor(max_workers=self.workers) as executor:
+			job = executor.submit(exec_common_friends,self.G)
+			a = job.result()
+			self.common.update(a)
+		return
 
 	def preprocess_neighbors_with_bfs(self):
 
@@ -42,7 +50,7 @@ class Graph():
 	def preprocess_neighbors_with_bfs_compact(self):
 
 		with ProcessPoolExecutor(max_workers=self.workers) as executor:
-			job = executor.submit(exec_bfs_compact,self.G,self.workers,self.calcUntilLayer)
+			job = executor.submit(exec_bfs_compact,self.G,self.workers,self.calcUntilLayer, self.common)
 			
 			job.result()
 
