@@ -97,7 +97,7 @@ def exec_struc2vec(args):
 
 	G = read_graph(args)
 	G = struc2vec.Graph(G, args.directed, args.workers, untilLayer = until_layer, pcommonf = args.pcommonf)
-
+	G.prepareCommonFriends()
 	if(args.OPT1):
 		G.preprocess_neighbors_with_bfs_compact()
 	else:
