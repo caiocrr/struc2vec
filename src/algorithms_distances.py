@@ -19,35 +19,20 @@ def getDegreeListsVertices(g,vertices,calcUntilLayer):
 
     return degreeList
 
-def getCompactDegreeListsVertices(g,vertices,maxDegree,calcUntilLayer):
+def getCompactDegreeListsVertices(g,vertices,maxDegree,calcUntilLayer,common):
     degreeList = {}
     commonFriendsList = {}
 
     for v in vertices:
-        degreeList[v], commonFriendsList[v] = getCompactDegreeLists(g,v,maxDegree,calcUntilLayer)
+        degreeList[v], commonFriendsList[v] = getCompactDegreeLists(g,v,maxDegree,calcUntilLayer, common)
 
     return degreeList, commonFriendsList
 
-def getCommonFriendsMed(g,v):
-    #t0 = time()
-    med = 0
-    neighs = g[v]
-    neighs.sort()
+def getCommonFriendsMed(common,v):
+    return common[v]
 
-    vdegree = float(len(neighs))
-    totalcf = 0
-    for u in g[v]:
-        cf = 0
-        neighs_u = g[u]
-        neighs_u.sort()
-        cf = searchCommonFriends(neighs, neighs_u)
-        totalcf += cf
-    med = totalcf / vdegree
-    #t1 = time()
-    #logging.info('Common friends vertex {}. Med: {}. Time: {}s'.format(v,med,(t1-t0)))
-    return med
 
-def getCompactDegreeLists(g, root, maxDegree,calcUntilLayer):
+def getCompactDegreeLists(g, root, maxDegree,calcUntilLayer, common):
     t0 = time()
 
     listas = {}
@@ -76,7 +61,7 @@ def getCompactDegreeLists(g, root, maxDegree,calcUntilLayer):
             l[d] = 0
         l[d] += 1
 
-        q.append(getCommonFriendsMed(g,vertex))
+        q.append(getCommonFriendsMed(common,vertex))
 
         for v in g[vertex]:
             if(vetor_marcacao[v] == 0):
@@ -459,7 +444,7 @@ def preprocess_consolides_distances(distances, startLayer = 1):
     logging.info('Distances consolidated.')
 
 
-def exec_bfs_compact(G,workers,calcUntilLayer):
+def exec_bfs_compact(G,workers,calcUntilLayer,common):
 
     futures = {}
     degreeList = {}
@@ -481,7 +466,7 @@ def exec_bfs_compact(G,workers,calcUntilLayer):
 
         part = 1
         for c in chunks:
-            job = executor.submit(getCompactDegreeListsVertices,G,c,maxDegree,calcUntilLayer)
+            job = executor.submit(getCompactDegreeListsVertices,G,c,maxDegree,calcUntilLayer, common)
             futures[job] = part
             part += 1
 
@@ -534,6 +519,27 @@ def exec_bfs(G,workers,calcUntilLayer):
 
     return
 
+def exec_common_friends(g):
+    res = {}
+    for v in g.keys():
+        t0 = time()
+        med = 0
+        neighs = g[v]
+        neighs.sort()
+
+        vdegree = float(len(neighs))
+        totalcf = 0
+        for u in g[v]:
+            cf = 0
+            neighs_u = g[u]
+            neighs_u.sort()
+            cf = searchCommonFriends(neighs, neighs_u)
+            totalcf += cf
+        med = totalcf / vdegree
+        t1 = time()
+        logging.info('Common friends vertex {}. Med: {}. Time: {}s'.format(v,med,(t1-t0)))
+        res[v] = med
+    return res
 
 def generate_distances_network_part1(workers):
     parts = workers

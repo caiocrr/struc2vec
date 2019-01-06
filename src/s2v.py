@@ -9,6 +9,7 @@ from gensim.models.word2vec import LineSentence
 from time import time
 import sys
 
+import gc
 import graph
 
 logging.basicConfig(filename='struc2vec.log',filemode='w',level=logging.DEBUG,format='%(asctime)s %(message)s')
@@ -96,7 +97,7 @@ def exec_struc2vec(args):
 
 	G = read_graph(args)
 	G = struc2vec.Graph(G, args.directed, args.workers, untilLayer = until_layer, pcommonf = args.pcommonf)
-
+	G.prepareCommonFriends()		
 	if(args.OPT1):
 		G.preprocess_neighbors_with_bfs_compact()
 	else:
@@ -106,6 +107,8 @@ def exec_struc2vec(args):
 	# 	G.create_vectors()
 	# 	G.calc_distances(compactDegree = args.OPT1)
 	# else:
+	gc.collect()
+
 	G.calc_distances_all_vertices(compactDegree = args.OPT1)
 
 	G.create_distances_network()
