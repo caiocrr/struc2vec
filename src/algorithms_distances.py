@@ -333,7 +333,6 @@ def splitDegreeList(part,c,G,compactDegree):
 
    
     logging.info("Recovering commonFriends from disk...")
-    commonFriends = restoreVariableFromDisk('commonFriends')
 
 
 
