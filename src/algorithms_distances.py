@@ -325,7 +325,6 @@ def splitDegreeList(part,c,G,compactDegree):
 
 
 def calc_distances(part, commonList, compactDegree = False):
-
     vertices = restoreVariableFromDisk('split-vertices-'+str(part))
     degreeList = restoreVariableFromDisk('split-degreeList-'+str(part))
 
@@ -336,7 +335,6 @@ def calc_distances(part, commonList, compactDegree = False):
         dist_func = cost_max
     else:
         dist_func = cost
-
     for v1,nbs in vertices.iteritems():
         lists_v1 = degreeList[v1]
         common_v1 = commonList[v1]
@@ -345,20 +343,16 @@ def calc_distances(part, commonList, compactDegree = False):
             t00 = time()
             lists_v2 = degreeList[v2]
             common_v2 = commonList[v2]
-
             max_layer = min(len(lists_v1),len(lists_v2))
             distances_r[v1,v2] = {}
             distances_q[v1,v2] = {}
-
             for layer in range(0,max_layer):
                 dist_r, path = fastdtw(lists_v1[layer],lists_v2[layer],radius=1,dist=dist_func)
-                dist_q, path = fastdtw(common_v1[layer],common_v2[layer],radius=1,dist=dist_func)
+                dist_q, path = fastdtw(common_v1[layer],common_v2[layer],radius=1,dist=cost)
                 distances_r[v1,v2][layer] = dist_r
                 distances_q[v1,v2][layer] = dist_q
-
             t11 = time()
             logging.info('fastDTW between vertices ({}, {}). Time: {}s'.format(v1,v2,(t11-t00)))
-
 
     preprocess_consolides_distances(distances_r)
     preprocess_consolides_distances(distances_q)
@@ -392,7 +386,7 @@ def calc_distances_all(vertices,list_vertices,degreeList, commonList, part, comp
             for layer in range(0,max_layer):
                 #t0 = time()
                 dist_r, path = fastdtw(lists_v1[layer],lists_v2[layer],radius=1,dist=dist_func)
-                dist_q, path = fastdtw(common_v1[layer],common_v2[layer],radius=1,dist=dist_func)
+                dist_q, path = fastdtw(common_v1[layer],common_v2[layer],radius=1,dist=cost)
                 #t1 = time()
                 #logging.info('D ({} , {}), Tempo fastDTW da camada {} : {}s . Distância: {}'.format(v1,v2,layer,(t1-t0),dist))    
                 distances_r[v1,v2][layer] = dist_r
@@ -579,7 +573,7 @@ def generate_distances_network_part1(workers):
     for layer,values in weights_distances_r.iteritems():
         saveVariableOnDisk(values,'weights_distances-r-layer-'+str(layer))
     for layer,values in weights_distances_q.iteritems():
-        saveVariableOnDisk(values,'weights_distances--q-layer-'+str(layer))
+        saveVariableOnDisk(values,'weights_distances-q-layer-'+str(layer))
     return
 
 def generate_distances_network_part2(workers):
@@ -617,12 +611,14 @@ def generate_distances_network_part3(pcommonf):
         weights_distances_r = restoreVariableFromDisk('weights_distances-r-layer-'+str(layer))
         weights_distances_q = restoreVariableFromDisk('weights_distances-q-layer-'+str(layer))
 
+        
         logging.info('Executing layer {}...'.format(layer))
         alias_method_j = {}
         alias_method_q = {}
         weights = {}
     
         for v,neighbors in graphs_r.iteritems():
+            #logging.info('{}'.format(weights_distances_r[v]))
             er_list = deque()
             eq_list = deque()
             sum_wr = 0.0
@@ -644,10 +640,10 @@ def generate_distances_network_part3(pcommonf):
                 eq_list.append(wrq)
                 sum_wr += wr
                 sum_wq += wrq
-
+            
             er_list = [x / sum_wr for x in er_list]
             eq_list = [x / sum_wq for x in eq_list]
-            vec_res = (1 - pcommonf) * er_list + pcommonf * eq_list
+            vec_res = [(va*(1 - pcommonf) + eq_list[i]*pcommonf) for i,va in enumerate(er_list)]
             weights[v] = vec_res
             J, q = alias_setup(vec_res)
             alias_method_j[v] = J
