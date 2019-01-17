@@ -316,11 +316,6 @@ def splitDegreeList(part,c,G,compactDegree):
     saveVariableOnDisk(degreeListsSelected,'split-degreeList-'+str(part))
 
 
-   
-    logging.info("Recovering commonFriends from disk...")
-
-
-
     
 
 
