@@ -123,6 +123,7 @@ def execs2v(args):
 		learn_embeddings(args)
 	except RuntimeError as e:
 		logging.info(e.message)
+	return G
 
 
 
