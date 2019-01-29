@@ -291,7 +291,7 @@ def get_vertices(v,degree_v,degrees,a_vertices):
 
 
 def get_vertices_common(v, common_list_0, common_list_inverse, ordered_common_list):
-    to_select = 2*math.log(len(ordered_common_list),2)
+    to_select = int(2*math.log(len(ordered_common_list),2))
     index = findPosOrdered(ordered_common_list, 0, len(ordered_common_list) - 1, common_list_0[v])
     selecteds = set()
     count = 0
@@ -300,24 +300,24 @@ def get_vertices_common(v, common_list_0, common_list_inverse, ordered_common_li
     while (count < to_select):
         if (index + raio) > len(ordered_common_list) - 1:
             vs = common_list_inverse[ordered_common_list[index - raio]]
-            count += len(vs)
-            if(count > to_select):
-                to_pick = int(count - to_select)
+            if(count + len(vs) > to_select):
+                to_pick = int(count + len(vs)  - to_select)
                 vs = vs[::to_pick]
+            count += len(vs)
             selecteds = selecteds.union(set(vs))
         elif (index - raio) < 0:
             vs = common_list_inverse[ordered_common_list[index + raio]]
-            count += len(vs)
-            if(count > to_select):
-                to_pick = int(count - to_select)
+            if(count + len(vs)  > to_select):
+                to_pick = int(count + len(vs)  - to_select)
                 vs = vs[::to_pick]
+            count += len(vs)
             selecteds = selecteds.union(set(vs))
         else:
             vs = common_list_inverse[min(ordered_common_list[index + raio], ordered_common_list[index - raio])]
-            count += len(vs)
-            if(count > to_select):
-                to_pick = int(count - to_select)
+            if(count + len(vs) > to_select):
+                to_pick = int(count + len(vs)  - to_select)
                 vs = vs[::to_pick]
+            count += len(vs)
             selecteds = selecteds.union(set(vs))
         raio += 1
     return selecteds
@@ -357,7 +357,6 @@ def splitDegreeList(common_list_0, common_list_inverse, ordered_common_list, par
         nbs = nbs_degree + list(set(nbs_common) - set(nbs_degree))
         #nbs=nbs_degree
         vertices[v] = nbs
-        print(v,nbs)
         degreeListsSelected[v] = degreeList[v]
         for n in nbs:
             degreeListsSelected[n] = degreeList[n]
