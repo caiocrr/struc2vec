@@ -162,21 +162,32 @@ class Graph():
 
 		parts = self.workers
 		chunks = partition(vertices,parts)
+		commonList = restoreVariableFromDisk('commonList')	
+
+
+		common_list_inverse = {}
+		common_list_0 = {k:v[0][0] for k,v in commonList.items()}
+		for k,v in common_list_0.items():
+			if v not in common_list_inverse:
+				common_list_inverse[v] = [k]
+			else:
+				common_list_inverse[v].append(k)
+		ordered_common_list = sorted(common_list_inverse.keys())
 
 		with ProcessPoolExecutor(max_workers = 1) as executor:
 
 			logging.info("Split degree List...")
 			part = 1
 			for c in chunks:
-				job = executor.submit(splitDegreeList,part,c,G,compactDegree)
+				job = executor.submit(splitDegreeList,common_list_0, common_list_inverse, ordered_common_list,part,c,G,compactDegree)
 				job.result()
 				logging.info("degreeList {} completed.".format(part))
 				part += 1
 
 		
 		logging.info("Recovering commonList from disk...")
-		commonList = restoreVariableFromDisk('commonList')	
 
+		
 		with ProcessPoolExecutor(max_workers = self.workers) as executor:
 
 			part = 1

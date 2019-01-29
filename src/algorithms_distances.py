@@ -233,7 +233,7 @@ def verifyDegrees(degrees,degree_v_root,degree_a,degree_b):
     return degree_now 
 
 def get_vertices(v,degree_v,degrees,a_vertices):
-    a_vertices_selected = 2 * math.log(a_vertices,2)
+    a_vertices_selected = 2*math.log(a_vertices,2)
     #logging.info("Selecionando {} próximos ao vértice {} ...".format(int(a_vertices_selected),v))
     vertices = deque()
 
@@ -290,7 +290,53 @@ def get_vertices(v,degree_v,degrees,a_vertices):
     return list(vertices)
 
 
-def splitDegreeList(part,c,G,compactDegree):
+def get_vertices_common(v, common_list_0, common_list_inverse, ordered_common_list):
+    to_select = 2*math.log(len(ordered_common_list),2)
+    index = findPosOrdered(ordered_common_list, 0, len(ordered_common_list) - 1, common_list_0[v])
+    selecteds = set()
+    count = 0
+    raio = 1
+    
+    while (count < to_select):
+        if (index + raio) > len(ordered_common_list) - 1:
+            vs = common_list_inverse[ordered_common_list[index - raio]]
+            count += len(vs)
+            if(count > to_select):
+                to_pick = int(count - to_select)
+                vs = vs[::to_pick]
+            selecteds = selecteds.union(set(vs))
+        elif (index - raio) < 0:
+            vs = common_list_inverse[ordered_common_list[index + raio]]
+            count += len(vs)
+            if(count > to_select):
+                to_pick = int(count - to_select)
+                vs = vs[::to_pick]
+            selecteds = selecteds.union(set(vs))
+        else:
+            vs = common_list_inverse[min(ordered_common_list[index + raio], ordered_common_list[index - raio])]
+            count += len(vs)
+            if(count > to_select):
+                to_pick = int(count - to_select)
+                vs = vs[::to_pick]
+            selecteds = selecteds.union(set(vs))
+        raio += 1
+    return selecteds
+
+
+
+def findPosOrdered(arr, low, high, x):
+    if (arr[high] <= x):
+        return high
+    if (arr[low] > x):
+        return low
+    mid = (low + high)/2
+    if (arr[mid] <= x and arr[mid+1] > x):
+        return mid
+    if(arr[mid] < x):
+        return findPosOrdered(arr, mid+1, high, x)
+    return findPosOrdered(arr, low, mid - 1, x)
+
+def splitDegreeList(common_list_0, common_list_inverse, ordered_common_list, part,c,G,compactDegree):
     if(compactDegree):
         logging.info("Recovering compactDegreeList from disk...")
         degreeList = restoreVariableFromDisk('compactDegreeList')
@@ -306,8 +352,12 @@ def splitDegreeList(part,c,G,compactDegree):
     a_vertices = len(G)
 
     for v in c:
-        nbs = get_vertices(v,len(G[v]),degrees,a_vertices)
+        nbs_degree = get_vertices(v,len(G[v]),degrees,a_vertices)
+        nbs_common = get_vertices_common(v, common_list_0, common_list_inverse, ordered_common_list)
+        nbs = nbs_degree + list(set(nbs_common) - set(nbs_degree))
+        #nbs=nbs_degree
         vertices[v] = nbs
+        print(v,nbs)
         degreeListsSelected[v] = degreeList[v]
         for n in nbs:
             degreeListsSelected[n] = degreeList[n]
