@@ -197,14 +197,23 @@ class Graph():
 				job = executor.submit(calc_distances, part, compactDegree = compactDegree)
 				futures[job] = part
 				part += 1
-
+					
 			logging.info("Receiving results...")
 			for job in as_completed(futures):
 				job.result()
 				r = futures[job]
 				logging.info("Part {} completed.".format(r))
 
-
+		part = 1
+		for c in chunks:
+			logging.info("Consolidating distances part {}...".format(part))
+			distances_r = restoreVariableFromDisk('distances-r-'+str(part))
+			distances_q = restoreVariableFromDisk('distances-q-'+str(part))
+			preprocess_consolides_distances(distances_r)
+			preprocess_consolides_distances(distances_q)
+			saveVariableOnDisk(distances_r,'distances-r-'+str(part))
+			saveVariableOnDisk(distances_q,'distances-q-'+str(part))
+					
 		return
 	def consolide_distances(self):
 

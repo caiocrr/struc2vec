@@ -427,12 +427,6 @@ def calc_distances(part, compactDegree = False):
             distances_q = {}
             #logging.info('fastDTW between vertices ({}, {}). Time: {}s'.format(v1,v2,(t11-t00)))
     
-    distances_r = restoreVariableFromDisk('distances-r-'+str(part))
-    distances_q = restoreVariableFromDisk('distances-q-'+str(part))
-    preprocess_consolides_distances(distances_r)
-    preprocess_consolides_distances(distances_q)
-    saveVariableOnDisk(distances_r,'distances-r-'+str(part))
-    saveVariableOnDisk(distances_q,'distances-q-'+str(part))
     return
 
 def calc_distances_all(vertices,list_vertices,degreeList, commonList, part, compactDegree = False):
