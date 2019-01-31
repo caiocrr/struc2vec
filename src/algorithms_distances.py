@@ -19,12 +19,22 @@ def getDegreeListsVertices(g,vertices,calcUntilLayer):
 
     return degreeList
 
-def getCompactDegreeListsVertices(g,vertices,maxDegree,calcUntilLayer,common):
+def getCompactDegreeListsVertices(g,vertices,maxDegree,calcUntilLayer,common, part):
     degreeList = {}
     commonFriendsList = {}
 
+    count = 0
+    lp = 1
+    total = len(vertices)
+    dezp = (float(total) / 10) if total >= 10 else 1
+    
     for v in vertices:
         degreeList[v], commonFriendsList[v] = getCompactDegreeLists(g,v,maxDegree,calcUntilLayer, common)
+        count += 1
+        if (count % int(dezp) == 0 ):
+            logging.info('BFS worker {} {}/{}.'.format(part, lp,min(10,total)))
+            lp+=1
+            count = 0
 
     return degreeList, commonFriendsList
 
@@ -95,7 +105,7 @@ def getCompactDegreeLists(g, root, maxDegree,calcUntilLayer, common):
 
 
     t1 = time()
-    logging.info('BFS vertex {}. Time: {}s'.format(root,(t1-t0)))
+    # logging.info('BFS vertex {}. Time: {}s'.format(root,(t1-t0)))
 
     return listas, commons
 
@@ -337,6 +347,7 @@ def findPosOrdered(arr, low, high, x):
     return findPosOrdered(arr, low, mid - 1, x)
 
 def splitDegreeList(common_list_0, common_list_inverse, ordered_common_list, part,c,G,compactDegree):
+    commonList = restoreVariableFromDisk('commonList')
     if(compactDegree):
         logging.info("Recovering compactDegreeList from disk...")
         degreeList = restoreVariableFromDisk('compactDegreeList')
@@ -348,6 +359,7 @@ def splitDegreeList(common_list_0, common_list_inverse, ordered_common_list, par
     degrees = restoreVariableFromDisk('degrees_vector')
 
     degreeListsSelected = {}
+    commonListSelected = {}
     vertices = {}
     a_vertices = len(G)
 
@@ -355,25 +367,33 @@ def splitDegreeList(common_list_0, common_list_inverse, ordered_common_list, par
         nbs_degree = get_vertices(v,len(G[v]),degrees,a_vertices)
         nbs_common = get_vertices_common(v, common_list_0, common_list_inverse, ordered_common_list)
         nbs = nbs_degree + list(set(nbs_common) - set(nbs_degree))
-        #nbs=nbs_degree
         vertices[v] = nbs
         degreeListsSelected[v] = degreeList[v]
+        commonListSelected[v] = commonList[v]
         for n in nbs:
             degreeListsSelected[n] = degreeList[n]
+            commonListSelected[n] = commonList[n]
 
     saveVariableOnDisk(vertices,'split-vertices-'+str(part))
     saveVariableOnDisk(degreeListsSelected,'split-degreeList-'+str(part))
+    saveVariableOnDisk(commonListSelected,'split-commonList-'+str(part))
+ 
 
 
-    
-
-
-def calc_distances(part, commonList, compactDegree = False):
+def calc_distances(part, compactDegree = False):
     vertices = restoreVariableFromDisk('split-vertices-'+str(part))
     degreeList = restoreVariableFromDisk('split-degreeList-'+str(part))
+    commonList = restoreVariableFromDisk('split-commonList-'+str(part))
 
     distances_r = {}
     distances_q = {}
+
+
+    count = 0
+    lp = 1
+    chunks = 1000
+    total = len(vertices.keys())
+    dezp = (float(total) / chunks) if total >= chunks else 1
 
     if compactDegree:
         dist_func = cost_max
@@ -396,8 +416,19 @@ def calc_distances(part, commonList, compactDegree = False):
                 distances_r[v1,v2][layer] = dist_r
                 distances_q[v1,v2][layer] = dist_q
             t11 = time()
-            logging.info('fastDTW between vertices ({}, {}). Time: {}s'.format(v1,v2,(t11-t00)))
-
+        count+=1
+        if (count % int(dezp) == 0 ):
+            logging.info('FASTDTW worker {} {}/{}.'.format(part, lp,min(chunks,total)))
+            lp+=1
+            count = 0
+            saveParcialVariableOnDisk(distances_r,'distances-r-'+str(part))
+            saveParcialVariableOnDisk(distances_q,'distances-q-'+str(part))
+            distances_r = {}
+            distances_q = {}
+            #logging.info('fastDTW between vertices ({}, {}). Time: {}s'.format(v1,v2,(t11-t00)))
+    
+    distances_r = restoreVariableFromDisk('distances-r-'+str(part))
+    distances_q = restoreVariableFromDisk('distances-q-'+str(part))
     preprocess_consolides_distances(distances_r)
     preprocess_consolides_distances(distances_q)
     saveVariableOnDisk(distances_r,'distances-r-'+str(part))
@@ -510,7 +541,7 @@ def exec_bfs_compact(G,workers,calcUntilLayer,common):
 
         part = 1
         for c in chunks:
-            job = executor.submit(getCompactDegreeListsVertices,G,c,maxDegree,calcUntilLayer, common)
+            job = executor.submit(getCompactDegreeListsVertices,G,c,maxDegree,calcUntilLayer, common, part)
             futures[job] = part
             part += 1
 

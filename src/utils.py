@@ -44,6 +44,16 @@ def saveVariableOnDisk(f,name):
 
     return
 
+def saveParcialVariableOnDisk(f,name):
+    val = {}
+    if isPickle(name):
+        val = restoreVariableFromDisk(name)
+        #logging.info('{} - {}'.format(name, val))
+    val.update(f)
+    logging.info('Saving parcial variable on disk...')
+    saveVariableOnDisk(val, name)
+
+    return
 
 
 

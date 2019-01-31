@@ -101,15 +101,28 @@ def exec_random_walk(graphs,alias_method_j,alias_method_q,v,walk_length,amount_n
                     layer = layer + 1
 
     t1 = time()
-    logging.info('RW - vertex {}. Time : {}s'.format(original_v,(t1-t0)))
+    #logging.info('RW - vertex {}. Time : {}s'.format(original_v,(t1-t0)))
 
     return path
 
 
-def exec_ramdom_walks_for_chunck(vertices,graphs,alias_method_j,alias_method_q,walk_length,amount_neighbours):
+def exec_ramdom_walks_for_chunck(vertices,graphs,alias_method_j,alias_method_q,walk_length,amount_neighbours, part):
     walks = deque()
+
+    count = 0
+    lp = 1
+    total = len(vertices)
+    dezp = (float(total) / 10) if total >= 10 else 1
+    
+
     for v in vertices:
         walks.append(exec_random_walk(graphs,alias_method_j,alias_method_q,v,walk_length,amount_neighbours))
+        count += 1
+        if (count % int(dezp) == 0 ):
+            logging.info('RW - iter {} {}/{}.'.format(part, lp,min(10,total)))
+            lp+=1
+            count = 0
+
     return walks
 
 def generate_random_walks_large_graphs(num_walks,walk_length,workers,vertices):
@@ -167,7 +180,7 @@ def generate_random_walks(num_walks,walk_length,workers,vertices):
         futures = {}
         for walk_iter in range(num_walks):
             random.shuffle(vertices)
-            job = executor.submit(exec_ramdom_walks_for_chunck,vertices,graphs,alias_method_j,alias_method_q,walk_length,amount_neighbours)
+            job = executor.submit(exec_ramdom_walks_for_chunck,vertices,graphs,alias_method_j,alias_method_q,walk_length,amount_neighbours, walk_iter)
             futures[job] = walk_iter
             #part += 1
         logging.info("Receiving results...")

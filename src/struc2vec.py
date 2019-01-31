@@ -162,8 +162,10 @@ class Graph():
 
 		parts = self.workers
 		chunks = partition(vertices,parts)
-		commonList = restoreVariableFromDisk('commonList')	
+		commonList = restoreVariableFromDisk('commonList')
 
+		os.system("rm "+returnPathStruc2vec()+"/../pickles/distances-r-*.pickle")
+		os.system("rm "+returnPathStruc2vec()+"/../pickles/distances-q-*.pickle")
 
 		common_list_inverse = {}
 		common_list_0 = {k:v[0][0] for k,v in commonList.items()}
@@ -174,7 +176,9 @@ class Graph():
 				common_list_inverse[v].append(k)
 		ordered_common_list = sorted(common_list_inverse.keys())
 
+
 		with ProcessPoolExecutor(max_workers = 1) as executor:
+
 
 			logging.info("Split degree List...")
 			part = 1
@@ -184,16 +188,13 @@ class Graph():
 				logging.info("degreeList {} completed.".format(part))
 				part += 1
 
-		
-		logging.info("Recovering commonList from disk...")
-
-		
+				
 		with ProcessPoolExecutor(max_workers = self.workers) as executor:
 
 			part = 1
 			for c in chunks:
 				logging.info("Executing part {}...".format(part))
-				job = executor.submit(calc_distances, part, commonList, compactDegree = compactDegree)
+				job = executor.submit(calc_distances, part, compactDegree = compactDegree)
 				futures[job] = part
 				part += 1
 
