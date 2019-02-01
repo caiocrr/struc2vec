@@ -388,13 +388,8 @@ def calc_distances(part, compactDegree = False):
     distances_r = {}
     distances_q = {}
 
-
-    count = 0
-    lp = 1
-    chunks = 1000
     total = len(vertices.keys())
-    dezp = (float(total) / chunks) if total >= chunks else 1
-
+    count = 0
     if compactDegree:
         dist_func = cost_max
     else:
@@ -417,16 +412,16 @@ def calc_distances(part, compactDegree = False):
                 distances_q[v1,v2][layer] = dist_q
             t11 = time()
         count+=1
-        if (count % int(dezp) == 0 ):
-            logging.info('FASTDTW worker {} {}/{}.'.format(part, lp,min(chunks,total)))
-            lp+=1
-            count = 0
+        logging.info('FASTDTW worker {} {}/{}.'.format(part, count,total))
+        if (count % int(1000) == 0 ):
             saveParcialVariableOnDisk(distances_r,'distances-r-'+str(part))
             saveParcialVariableOnDisk(distances_q,'distances-q-'+str(part))
             distances_r = {}
             distances_q = {}
             #logging.info('fastDTW between vertices ({}, {}). Time: {}s'.format(v1,v2,(t11-t00)))
-    
+    saveParcialVariableOnDisk(distances_r,'distances-r-'+str(part))
+    saveParcialVariableOnDisk(distances_q,'distances-q-'+str(part))
+
     return
 
 def calc_distances_all(vertices,list_vertices,degreeList, commonList, part, compactDegree = False):
