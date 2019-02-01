@@ -97,18 +97,12 @@ def exec_struc2vec(args):
 
 	G = read_graph(args)
 	G = struc2vec.Graph(G, args.directed, args.workers, untilLayer = until_layer, pcommonf = args.pcommonf)
-	G.prepareCommonFriends()
-	# if(args.OPT1):
-	G.preprocess_neighbors_with_bfs_compact()
-	# else:
-		# G.preprocess_neighbors_with_bfs()
-
-	# if(args.OPT2):
+	
 	if (not args.calculated_distances):
+		G.prepareCommonFriends()
+		G.preprocess_neighbors_with_bfs_compact()
 		G.create_vectors()
 		G.calc_distances(compactDegree = True)
-	# else:
-		# G.calc_distances_all_vertices(compactDegree = args.OPT1)
 
 	G.create_distances_network()
 	G.preprocess_parameters_random_walk()
