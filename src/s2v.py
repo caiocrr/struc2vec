@@ -104,8 +104,9 @@ def exec_struc2vec(args):
 		# G.preprocess_neighbors_with_bfs()
 
 	# if(args.OPT2):
-	G.create_vectors()
-	G.calc_distances(compactDegree = True, calculated_distances = args.calculated_distances)
+	if (not args.calculated_distances):
+		G.create_vectors()
+		G.calc_distances(compactDegree = True)
 	# else:
 		# G.calc_distances_all_vertices(compactDegree = args.OPT1)
 

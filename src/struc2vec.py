@@ -177,6 +177,9 @@ class Graph():
 		ordered_common_list = sorted(common_list_inverse.keys())
 
 
+		if (not calculated_distances):
+
+
 		with ProcessPoolExecutor(max_workers = 1) as executor:
 
 
@@ -213,6 +216,7 @@ class Graph():
 			preprocess_consolides_distances(distances_q)
 			saveVariableOnDisk(distances_r,'distances-r-'+str(part))
 			saveVariableOnDisk(distances_q,'distances-q-'+str(part))
+			part += 1
 					
 		return
 	def consolide_distances(self):
