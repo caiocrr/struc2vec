@@ -398,21 +398,24 @@ def calc_distances(part, compactDegree = False):
         lists_v1 = degreeList[v1]
         common_v1 = commonList[v1]
 
+        t00 = time()
         for v2 in nbs:
-            t00 = time()
             lists_v2 = degreeList[v2]
             common_v2 = commonList[v2]
             max_layer = min(len(lists_v1),len(lists_v2))
             distances_r[v1,v2] = {}
             distances_q[v1,v2] = {}
             for layer in range(0,max_layer):
+                tt0 = time()
                 dist_r, path = fastdtw(lists_v1[layer],lists_v2[layer],radius=1,dist=dist_func)
+                tt1 = time()
                 dist_q, path = fastdtw(common_v1[layer],common_v2[layer],radius=1,dist=cost)
+                tt2 = time()
                 distances_r[v1,v2][layer] = dist_r
                 distances_q[v1,v2][layer] = dist_q
-            t11 = time()
+        t11 = time()
         count+=1
-        logging.info('FASTDTW worker {} {}/{}.'.format(part, count,total))
+        logging.info('FASTDTW worker {} {}/{}. Time {}s'.format(part, count,total, round(t11-t00, 4)))
         if (count % int(1000) == 0 ):
             saveParcialVariableOnDisk(distances_r,'distances-r-'+str(part))
             saveParcialVariableOnDisk(distances_q,'distances-q-'+str(part))

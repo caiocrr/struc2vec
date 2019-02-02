@@ -110,18 +110,13 @@ def exec_ramdom_walks_for_chunck(vertices,graphs,alias_method_j,alias_method_q,w
     walks = deque()
 
     count = 0
-    lp = 1
     total = len(vertices)
-    dezp = (float(total) / 10) if total >= 10 else 1
-    
 
     for v in vertices:
         walks.append(exec_random_walk(graphs,alias_method_j,alias_method_q,v,walk_length,amount_neighbours))
         count += 1
-        if (count % int(dezp) == 0 ):
-            logging.info('RW - iter {} {}/{}.'.format(part, lp,min(10,total)))
-            lp+=1
-            count = 0
+        if (count % 1000 == 0 ):
+            logging.info('RW - iter {} {}/{}.'.format(part, count,total))
 
     return walks
 
