@@ -176,10 +176,6 @@ class Graph():
 				common_list_inverse[v].append(k)
 		ordered_common_list = sorted(common_list_inverse.keys())
 
-
-		if (not calculated_distances):
-
-
 		with ProcessPoolExecutor(max_workers = 1) as executor:
 
 
