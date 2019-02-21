@@ -252,7 +252,7 @@ class Graph():
 	def simulate_walks(self,num_walks,walk_length):
 
 		# for large graphs, it is serially executed, because of memory use.
-		if(len(self.G) > 100000):
+		if(len(self.G) > 50000):
 
 			with ProcessPoolExecutor(max_workers=1) as executor:
 				job = executor.submit(generate_random_walks_large_graphs,num_walks,walk_length,self.workers,self.G.keys())
